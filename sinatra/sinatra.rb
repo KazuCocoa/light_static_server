@@ -35,7 +35,6 @@ __END__
   %a{:href => '/'}top
   = yield
 
-
 @@ index
 %h1 File Server
 %table
