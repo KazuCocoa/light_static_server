@@ -23,7 +23,7 @@ defmodule StaticServer.Router do
     end
   end
 
-  def file_listing(directory) do
+  defp file_listing(directory) do
     {:ok, files} = File.ls(@root <> "/" <> directory)
     files
   end
@@ -62,19 +62,18 @@ defmodule StaticServer.Render do
                   %a{title: "#{file}", href: "/files/#{Path.basename(file)}"}= Path.basename(file)
                 - true ->
                   %a{title: "#{file}", href: "/#{Path.basename(file)}"}= Path.basename(file)
+              %td
+                - {:ok, %{size: size}} = File.stat(file)
+                  = "#{size}b"
             - else
               - case File.dir?(@file_path <> "/" <> file) do
                 - false ->
                   %a{title: "#{file}", href: "/files/#{@file_path}/#{Path.basename(file)}"}= Path.basename(file)
                 - true ->
                   %a{title: "#{file}", href: "/#{@file_path}/#{Path.basename(file)}"}= Path.basename(file)
-          %td
-            - if @file_path == "" do
-              - {:ok, %{size: size}} = File.stat(file)
-                = "#{size}b"
-            - else
-              - {:ok, %{size: size}} = File.stat("#{@file_path}/#{Path.basename(file)}")
-                = "#{size}b"
+              %td
+                - {:ok, %{size: size}} = File.stat("#{@file_path}/#{Path.basename(file)}")
+                  = "#{size}b"
     """
     |> Calliope.render
     |> EEx.eval_string(assigns: [files: files, file_path: file_path])
