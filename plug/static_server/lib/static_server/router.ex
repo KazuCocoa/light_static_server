@@ -1,12 +1,13 @@
 defmodule StaticServer.Router do
   use Plug.Router
 
+  alias StaticServer.Router
   alias StaticServer.Render
 
   plug :match
   plug :dispatch
 
-  @root Path.absname("")
+  defstruct [root: Path.absname("")]
 
   get "/" do
     send_resp conn, 200, Render.index(file_listing("/"), "")
@@ -24,7 +25,7 @@ defmodule StaticServer.Router do
   end
 
   defp file_listing(directory) do
-    {:ok, files} = File.ls(@root <> "/" <> directory)
+    {:ok, files} = File.ls(struct(Router).root <> "/" <> directory)
     files
   end
 
@@ -32,50 +33,5 @@ defmodule StaticServer.Router do
     conn
     |> put_resp_content_type("text/plain")
     |> send_resp(400, "Bad Request")
-  end
-end
-
-defmodule StaticServer.Render do
-  @root Path.absname("")
-
-  def top do
-    ~S"""
-    %html
-      %a{:href => '/'}top
-    """
-    |> Calliope.render
-  end
-
-  def index(files, file_path) do
-    ~S"""
-    %h1 File Server
-    %table
-      %tr
-        %th File
-        %th Size
-      - for file <- @files do
-        %tr
-          %td
-            - if @file_path == "" do
-              - case File.dir?(file) do
-                - false ->
-                  %a{title: "#{file}", href: "/files/#{Path.basename(file)}"}= Path.basename(file)
-                - true ->
-                  %a{title: "#{file}", href: "/#{Path.basename(file)}"}= Path.basename(file)
-              %td
-                - {:ok, %{size: size}} = File.stat(file)
-                  = "#{size}b"
-            - else
-              - case File.dir?(@file_path <> "/" <> file) do
-                - false ->
-                  %a{title: "#{file}", href: "/files/#{@file_path}/#{Path.basename(file)}"}= Path.basename(file)
-                - true ->
-                  %a{title: "#{file}", href: "/#{@file_path}/#{Path.basename(file)}"}= Path.basename(file)
-              %td
-                - {:ok, %{size: size}} = File.stat("#{@file_path}/#{Path.basename(file)}")
-                  = "#{size}b"
-    """
-    |> Calliope.render
-    |> EEx.eval_string(assigns: [files: files, file_path: file_path])
   end
 end
