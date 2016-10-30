@@ -1,6 +1,7 @@
 import Foundation
 
 import Kitura
+import KituraStencil
 
 import LoggerAPI
 import HeliumLogger
@@ -10,16 +11,19 @@ import HeliumLogger
 #endif
 
 let router = Router()
+router.add(templateEngine: StencilTemplateEngine())
+
 Log.logger = HeliumLogger()
 
 enum HeadersContentType: String {
+    case Html = "text/html; charset=utf-8"
     case Text = "text/plain; charset=utf-8"
     case Json = "application/json; charset=utf-8"
 }
 
 struct Headers {
-    func setContentText(response: RouterResponse) -> RouterResponse {
-        response.headers["Content-Type"] = HeadersContentType.Text.rawValue
+    func setContentText(response: RouterResponse, type: HeadersContentType) -> RouterResponse {
+        response.headers["Content-Type"] = type.rawValue
         return response
     }
 }
@@ -34,7 +38,7 @@ router.get("/users/:userId") { request, response, next in
     next()
   }
 
-  headers.setContentText(response: response)
+  headers.setContentText(response: response, type: HeadersContentType.Text)
     .send(
       "request: \(request)\n" +
       "request.matchedPath: \(request.matchedPath)\n" +
@@ -48,13 +52,16 @@ router.get("/users") { request, response, next in
   defer {
     next()
   }
-  headers.setContentText(response: response)
-    .send(
-      "request: \(request)\n" +
-      "request.matchedPath: \(request.matchedPath)\n" +
-      "request.parsedURL.path: \(request.parsedURL.path)\n" +
-      "request.url: \(request.url)\n"
-    )
+
+  var context = [
+     "articles": [
+       ["title": "Migrating from OCUnit to XCTest", "author": "Kyle Fuller"],
+       ["title": "Memory Management with ARC", "author": "Kyle Fuller" ]
+     ]
+  ]
+
+  try headers.setContentText(response: response, type: HeadersContentType.Html)
+        .render("document.stencil", context: context).end()
 }
 
 Kitura.addHTTPServer(onPort: 8090, with: router)
