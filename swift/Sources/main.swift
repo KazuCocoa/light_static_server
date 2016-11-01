@@ -32,8 +32,26 @@ let headers = Headers()
 
 router.all("/static", middleware: StaticFileServer(path: "./static")) // default
 
+router.get("/files/*") { request, response, next in
+  defer {
+    next()
+  }
+
+  let url = request.url
+  let filteredPath = url.substring(from: url.index(url.startIndex, offsetBy: 7))
+
+  var context = [
+     "articles": [
+       ["title": "url: \(filteredPath)", "author": "my name"]
+     ]
+  ]
+
+  try headers.setContentText(response: response, type: HeadersContentType.Html)
+        .render("document.stencil", context: context).end()
+}
+
 // http://localhost:8090/users/1234 is matched with "/*" and "users/:userId"
-router.get("/users/:userId") { request, response, next in
+router.get("/*") { request, response, next in
   defer {
     next()
   }
@@ -46,22 +64,6 @@ router.get("/users/:userId") { request, response, next in
       "request.url: \(request.url)\n" +
       "request.parameters: \(request.parameters)\n"
     )
-}
-
-router.get("/users") { request, response, next in
-  defer {
-    next()
-  }
-
-  var context = [
-     "articles": [
-       ["title": "Migrating from OCUnit to XCTest", "author": "Kyle Fuller"],
-       ["title": "Memory Management with ARC", "author": "Kyle Fuller" ]
-     ]
-  ]
-
-  try headers.setContentText(response: response, type: HeadersContentType.Html)
-        .render("document.stencil", context: context).end()
 }
 
 Kitura.addHTTPServer(onPort: 8090, with: router)
